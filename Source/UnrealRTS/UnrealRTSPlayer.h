@@ -3,32 +3,35 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"
-#include "UnrealRTSCharacter.generated.h"
+#include "GameFramework/Pawn.h"
+#include "UnrealRTSPlayer.generated.h"
 
 UCLASS(Blueprintable)
-class AUnrealRTSCharacter : public ACharacter
+class AUnrealRTSPlayer : public APawn
 {
 	GENERATED_BODY()
 
 public:
-	AUnrealRTSCharacter();
+	AUnrealRTSPlayer();
 
 	// Called every frame.
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Returns TopDownCameraComponent subobject **/
-	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
+	FORCEINLINE class UCameraComponent* GetCameraComponent() const { return CameraComponent; }
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 
 private:
+	/** Movement component */
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	class UFloatingPawnMovement* MovementComponent;
+	
 	/** Top down camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	class UCameraComponent* TopDownCameraComponent;
+	class UCameraComponent* CameraComponent;
 
 	/** Camera boom positioning the camera above the character */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class USpringArmComponent* CameraBoom;
 };
-

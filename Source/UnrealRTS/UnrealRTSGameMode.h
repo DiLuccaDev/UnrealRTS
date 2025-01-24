@@ -14,6 +14,3 @@ class AUnrealRTSGameMode : public AGameModeBase
 public:
 	AUnrealRTSGameMode();
 };
-
-
-
