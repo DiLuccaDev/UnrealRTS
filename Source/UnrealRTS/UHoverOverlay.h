@@ -21,16 +21,13 @@ class UNREALRTS_API UHoverOverlay : public UOverlay
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(BlueprintAssignable, Category = "HoverOverlay|Event")
+	UPROPERTY(BlueprintCallable, Category = "HoverOverlay|Event")
 	FOnMouseHoverEvent OnHovered;
 
-	UPROPERTY(BlueprintAssignable, Category = "HoverOverlay|Event")
+	UPROPERTY(BlueprintCallable, Category = "HoverOverlay|Event")
 	FOnMouseHoverEvent OnUnhovered;
 
 protected:
-	//todo
-	virtual void NativeConstruct();
-	
 	// References for editor-made widgets.
 	UPROPERTY(EditAnywhere, meta = (BindWidget), Category = "HoverOverlay|Zones")
 	UImage* TopZone;
