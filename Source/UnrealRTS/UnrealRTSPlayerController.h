@@ -6,6 +6,7 @@
 #include "Templates/SubclassOf.h"
 #include "GameFramework/PlayerController.h"
 #include "InputActionValue.h"
+#include "UnrealRTSUnit.h"
 #include "PlayerHUDCode.h"
 
 #include "UnrealRTSPlayerController.generated.h"
@@ -43,16 +44,20 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	TObjectPtr<UNiagaraSystem> FXCursor;
 
-	/** MappingContext */
+	/** INPUT
+	 * MappingContext */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
-
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	TObjectPtr<UInputAction> SetDestinationAction;
+	// Default: Left Click
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SelectAction;
+	// Default: Right Click
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> SetDestinationAction;
+	// Default: Arrow Keys and Mouse
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> CameraPanAction;
+	// Default: Mouse Wheel
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> CameraZoomAction;
 
@@ -77,6 +82,7 @@ protected:
 
 	/** Input handlers for SetDestination action. */
 	void OnInputStarted();
+	void OnSelectTriggered();
 	void OnSetDestinationTriggered();
 	void OnSetDestinationReleased();
 
@@ -90,8 +96,10 @@ protected:
 	void PanCamera(const float x, const float y);
 
 private:
-	FVector cachedDestination;
+	FVector CachedDestination;
 
 	bool bIsTouch; // Is it a touch device
 	float FollowTime; // For how long it has been pressed
+
+	TObjectPtr<AUnrealRTSUnit> SelectedUnit;
 };

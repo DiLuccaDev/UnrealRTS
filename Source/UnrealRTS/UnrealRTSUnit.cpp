@@ -27,6 +27,12 @@ AUnrealRTSUnit::AUnrealRTSUnit()
 	GetCharacterMovement()->bConstrainToPlane = true;
 	GetCharacterMovement()->bSnapToPlaneAtStart = true;
 
+	if (GetMesh())
+	{
+		GetMesh()->SetCollisionProfileName(TEXT("NoCollision"));
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
 	// Activate ticking in order to update the cursor every frame.
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
@@ -34,5 +40,43 @@ AUnrealRTSUnit::AUnrealRTSUnit()
 
 void AUnrealRTSUnit::Tick(float DeltaSeconds)
 {
-    Super::Tick(DeltaSeconds);
+	Super::Tick(DeltaSeconds);
+
+	if (CachedDestination != FVector::ZeroVector)
+	{
+		UE_LOG(LogTemp, Display, TEXT("NONZERO VEC: %s"), *CachedDestination.ToString());
+
+		if (FVector::DistSquared(GetActorLocation(), CachedDestination) > 100.f)
+		{
+			const FVector WorldDirection = (CachedDestination - GetActorLocation()).GetSafeNormal();
+			AddMovementInput(WorldDirection, 1.f, false);
+		} else
+		{
+			CachedDestination = FVector::ZeroVector;
+		}
+	}
+}
+
+void AUnrealRTSUnit::SetDestination(FVector Destination)
+{
+	CachedDestination = Destination;
+	//MoveToDestination();
+}
+
+void AUnrealRTSUnit::MoveToDestination()
+{
+	if (CachedDestination == FVector::ZeroVector) return; // No Destination Set
+
+	AsyncTask(ENamedThreads::GameThread, [this]()
+	{
+		while (FVector::DistSquared(GetActorLocation(), CachedDestination) > 100.f)
+		{
+			const FVector WorldDirection = (CachedDestination - GetActorLocation()).GetSafeNormal();
+			AddMovementInput(WorldDirection, 1.f, false);
+
+			//FPlatformProcess::Sleep(0.016f);
+		}
+
+		CachedDestination = FVector::ZeroVector;
+	});
 }

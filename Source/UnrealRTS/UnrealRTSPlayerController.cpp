@@ -4,6 +4,8 @@
 #include "NiagaraFunctionLibrary.h"
 #include "Engine/World.h"
 #include "EnhancedInputSubsystems.h"
+#include "Selectable.h"
+#include "UnrealRTSUnit.h"
 #include "Engine/LocalPlayer.h"
 #include "Components/InputComponent.h"
 #include "EnhancedInput/Public/EnhancedInputComponent.h"
@@ -16,7 +18,7 @@ AUnrealRTSPlayerController::AUnrealRTSPlayerController()
 {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
-	cachedDestination = FVector::ZeroVector;
+	CachedDestination = FVector::ZeroVector;
 	FollowTime = 0.f;
 }
 
@@ -75,6 +77,8 @@ void AUnrealRTSPlayerController::SetupInputComponent()
 		// Setup mouse input events
 		EnhancedInputComponent->BindAction(SetDestinationAction, ETriggerEvent::Started, this,
 		                                   &AUnrealRTSPlayerController::OnInputStarted);
+		EnhancedInputComponent->BindAction(SelectAction, ETriggerEvent::Triggered, this,
+		                                   &AUnrealRTSPlayerController::OnSelectTriggered);
 		EnhancedInputComponent->BindAction(SetDestinationAction, ETriggerEvent::Triggered, this,
 		                                   &AUnrealRTSPlayerController::OnSetDestinationTriggered);
 		EnhancedInputComponent->BindAction(SetDestinationAction, ETriggerEvent::Completed, this,
@@ -102,6 +106,31 @@ void AUnrealRTSPlayerController::OnInputStarted()
 	StopMovement();
 }
 
+void AUnrealRTSPlayerController::OnSelectTriggered()
+{
+	FHitResult Hit;
+	bool bHitSuccessful = false;
+	bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Pawn, true, Hit);
+
+	// If we hit a surface, cache the location
+	if (bHitSuccessful)
+	{
+		AActor* HitActor = Hit.GetActor();
+		if (!HitActor) return;
+
+		// Check if it's a static mesh component and get its owner
+		if (UPrimitiveComponent* HitComponent = Cast<UPrimitiveComponent>(Hit.GetComponent()))
+		{
+			AActor* ParentActor = HitComponent->GetOwner();
+			if (AUnrealRTSUnit* unit = Cast<AUnrealRTSUnit>(ParentActor))
+			{
+				SelectedUnit = unit;
+				UE_LOG(LogTemp, Display, TEXT("Selected: %s"), *SelectedUnit->UnitName);
+			}
+		}
+	}
+}
+
 // Triggered every frame when the input is held down
 void AUnrealRTSPlayerController::OnSetDestinationTriggered()
 {
@@ -116,19 +145,19 @@ void AUnrealRTSPlayerController::OnSetDestinationTriggered()
 	// If we hit a surface, cache the location
 	if (bHitSuccessful)
 	{
-		cachedDestination = Hit.Location;
+		CachedDestination = Hit.Location;
 	}
 
 	// Move towards mouse pointer or touch
 	// TODO: Change this based on user selection.
-	/*
-	APawn* ControlledPawn = GetPawn();
-	if (ControlledPawn != nullptr)
+
+	if (SelectedUnit != nullptr)
 	{
-		FVector WorldDirection = (cachedDestination - ControlledPawn->GetActorLocation()).GetSafeNormal();
-		ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
+		//FVector WorldDirection = (CachedDestination - SelectedUnit->GetActorLocation()).GetSafeNormal();
+		SelectedUnit->SetDestination(CachedDestination);
+		UE_LOG(LogTemp, Display, TEXT("SetDest: %s"), *CachedDestination.ToString());
+		//SelectedUnit->AddMovementInput(WorldDirection, 1.0, false);
 	}
-	*/
 }
 
 void AUnrealRTSPlayerController::OnSetDestinationReleased()
@@ -138,7 +167,7 @@ void AUnrealRTSPlayerController::OnSetDestinationReleased()
 	{
 		// We move there and spawn some particles
 		//UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, cachedDestination, FRotator::ZeroRotator,
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator,
 		                                               FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
 	}
 
@@ -159,12 +188,12 @@ void AUnrealRTSPlayerController::HandleHovered()
 	if (GetMousePosition(outVec.X, outVec.Y))
 	{
 		FVector2D ViewportSize;
-			GEngine->GameViewport->GetViewportSize(ViewportSize);
+		GEngine->GameViewport->GetViewportSize(ViewportSize);
 		const FVector2D ViewportCenter = FVector2D(ViewportSize.X / 2, ViewportSize.Y / 2);
-		
+
 		// Calculate the offset from the center.
 		FVector2D OffsetFromCenter = outVec - ViewportCenter;
-		
+
 		// Normalize the offset.
 		FVector2D NormalizedOffset = OffsetFromCenter.GetSafeNormal();
 
@@ -191,7 +220,7 @@ void AUnrealRTSPlayerController::HandleHovered()
 			DrawDebugPoint(GetWorld(), WorldLocation, 10.0f, FColor::Red, false, 1.0f); // Adjust size/lifespan as needed.
 		}
 		*/
-		
+
 		// Apply sensitivity scaling.
 		ScaledOffset *= cameraPanMouseSensitivity;
 
